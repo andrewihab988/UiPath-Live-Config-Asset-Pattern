@@ -1,39 +1,39 @@
 # UiPath Live Config Asset Pattern
 
-A UiPath template and guide for moving project configurations from static `Config.xlsx` files to a single, dynamic JSON Text Asset in Orchestrator. This pattern allows you to update your bot's settings in real-time without redeploying the package.
-
-## The Problem: Static Configs are Inefficient
-
-The traditional `Config.xlsx` file is a major bottleneck in a mature RPA environment. Every time a simple, environment-specific setting needs to be changed—such as a target URL, a shared folder path, a retry count, or a feature flag—the entire automation package must be:
-
-1.  Opened in Studio.
-2.  Edited.
-3.  Re-published to Orchestrator.
-4.  Updated in the environment.
-
-This process is slow, inefficient, and introduces unnecessary risk for what should be a simple configuration change. It violates the core DevOps principle of separating **Code** from **Configuration**.
-
-## The Solution: A Single JSON Text Asset
-
-This pattern leverages a single **Orchestrator Text Asset** to hold your *entire* configuration as a JSON string.
-
-A simple `Get Asset` and `Deserialize JSON` in your robot's `Init` phase loads all settings into a dynamic `JObject` variable. This gives you the power to update any bot setting in real-time, directly from Orchestrator, with **zero redeployment**.
-
-
-
-## Key Benefits
-
-* **Real-Time Updates:** Change a setting in Orchestrator, and the bot uses it on its very next run.
-* **Zero Redeployment:** No need to stop processes or republish packages for simple config changes.
-* **Centralized & Scalable:** Manage all your process settings from one central, auditable location.
-* **Structured Data:** Use the power of JSON for nested and complex configurations (e.g., `Config("Timeouts")("Short")`) far superior to a flat Excel file.
-* **DevOps Alignment:** Truly separates your static code (the package) from your dynamic configuration (the asset).
+A UiPath template and guide for moving project configurations from static `Config.xlsx` files to a single, dynamic JSON Text Asset in Orchestrator.  
+This pattern allows you to update your bot's settings in real time **without redeploying** the package.
 
 ---
 
-## Installation & Usage Guide
+## The Problem: Static Configs are Inefficient
 
-Here is the step-by-step guide to implement this pattern in your own projects.
+The traditional `Config.xlsx` file is a major bottleneck in a mature RPA environment.  
+Every time a simple environment-specific setting (URL, path, retry count, feature flag) changes, the entire package must be:
+1. Opened in Studio  
+2. Edited  
+3. Re-published to Orchestrator  
+4. Updated in the environment  
+
+This workflow violates the DevOps principle of separating *Code* from *Configuration*.
+
+---
+
+## The Solution: A Single JSON Text Asset
+
+Use a single **Orchestrator Text Asset** to store your entire configuration as a JSON string.  
+A simple `Get Asset` and `Deserialize JSON` activity loads the settings into a `JObject` variable during initialization.
+
+### Benefits
+
+- Real-time updates: configuration changes apply immediately on the next run  
+- Zero redeployment needed  
+- Centralized, auditable configuration  
+- Structured JSON for nested, complex settings  
+- DevOps-aligned design separating code and config
+
+---
+
+## Installation & Usage Guide 🚀
 
 ### Step 1: Create the JSON Configuration
 
@@ -64,76 +64,74 @@ Create a text file to define all your settings in JSON format. This structure is
 ```
 
 
+---
 
-### Step 2: Configure Your UiPath Project
-Step 2: Create the Orchestrator Asset
+### Step 2: Create the Orchestrator Asset
 
-Log in to UiPath Orchestrator and navigate to the correct folder.
+1. Log in to **UiPath Orchestrator**.  
+2. Navigate to the correct folder for your process.  
+3. Go to the **Assets** tab.  
+4. Click **+ Add Asset** → **Create a new asset**.  
+5. Configure the asset:
+   - **Name:** `Config_InvoiceProcessing`
+   - **Type:** `Text`
+   - **Value:** Paste the JSON from Step 1  
+6. Click **Create**.
 
-Go to the Assets tab.
+---
 
-Click + Add Asset and select "Create a new asset".
+## Step 3: Configure Your UiPath Project
 
-Configure the asset:
+Place this logic in your **Initialization** sequence  
+(e.g., `InitAllSettings.xaml` in REFramework).
 
-Asset name: Config_InvoiceProcessing (Use a clear, consistent naming convention).
+### Add Required Package
+Install **UiPath.WebAPI.Activities** (includes `Deserialize JSON`).
 
-Type: Select Text.
+### Create Arguments and Variables
 
-Value: Copy and paste your entire JSON string from Step 1 into this box.
+| Name             | Direction | Type                              | Description                         |
+|------------------|------------|------------------------------------|-------------------------------------|
+| `out_Config`     | Out        | `Newtonsoft.Json.Linq.JObject`     | Serialized configuration object     |
+| `str_ConfigJson` | In/Out     | `String`                           | Temporary variable to store JSON    |
 
-Click Create.
 
-Step 3: Configure Your UiPath Project
+### Build the Workflow
 
-This logic should be placed in your Initialization workflow (e.g., InitAllSettings.xaml in the REFramework).
+1. **Add a Get Asset activity**
+   - **AssetName:** `Config_InvoiceProcessing`
+   - **Value (Output):** `str_ConfigJson`
 
-Add Package: Ensure you have the UiPath.WebAPI.Activities package installed (it includes Deserialize JSON).
+2. **Add a Deserialize JSON activity**
+   - **JsonString (Input):** `str_ConfigJson`
+   - **JsonObject (Output):** `out_Config`
 
-Create Arguments/Variables:
+---
 
-out_Config (Type: JObject): This will hold your configuration. (Browse for type: Newtonsoft.Json.Linq.JObject).
+## Step 4: Use the Configuration
 
-str_ConfigJson (Type: String): A temporary variable to hold the text from the asset.
+Access configuration values dynamically across workflows.
 
-Build the Workflow:
+### Example Usage in Assign Activity
 
-Add a Get Asset activity.
-
-AssetName: "Config_InvoiceProcessing" (or pass this in as an argument).
-
-Value (Output): str_ConfigJson
-
-Add a Deserialize JSON activity.
-
-JsonString (Input): str_ConfigJson
-
-JsonObject (Output): out_Config
-
-Step 4: Use the Configuration
-
-You can now pass the out_Config object to all other workflows. To access a value, use this syntax:
 ```
 Assign Activity:
-// Simple Value
-str_SAP_URL = out_Config("AppURLs")("SAP_Login").ToString
+’ Simple Value str_SAP_URL = out_Config(“AppURLs”)(“SAP_Login”).ToString
+’ Nested Value str_InputPath = out_Config(“FilePaths”)(“InputFolder”).ToString
+’ Integer/Number int_MaxRetries = CInt(out_Config(“MaxRetries”).ToString)
+’ Boolean Feature Flag bool_SendEmail = CBool(out_Config(“FeatureFlags”)(“SendEmail”).ToString)
 
-// Nested Value
-str_InputPath = out_Config("FilePaths")("InputFolder").ToString
-
-// Integer/Number
-int_MaxRetries = CInt(out_Config("MaxRetries").ToString)
-
-// Boolean Feature Flag
-bool_SendEmail = CBool(out_Config("FeatureFlags")("SendEmail").ToString)
-As a best practice, you should assign all these values to local variables during the Init phase. This "fails fast" if a key is misspelled and makes your code much more readable.
 ```
-Step 5: Test the "Live" Update
 
-Run your robot. Note the values it's using in the logs (e.g., SAP_Login URL).
+**Best Practice:**  
+Assign all configuration values to *local variables* during the **Init** phase to ensure fail-fast validation and improve readability.
 
-Go to Orchestrator, edit the Config_InvoiceProcessing asset, and change the SAP_Login URL. Click Update.
+---
 
-Run the robot again without redeploying.
+## Step 5: Test the Live Update
 
-Observe the logs. The robot will now be using the new URL.
+1. Run your robot and log config values (e.g., `SAP_Login` URL).  
+2. Edit the `Config_InvoiceProcessing` asset in Orchestrator.  
+3. Modify any setting (e.g., `SAP_Login`).  
+4. Click **Update**, then run the bot again — no redeployment required.
+
