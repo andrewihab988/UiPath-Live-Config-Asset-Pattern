@@ -115,7 +115,7 @@ JsonObject (Output): out_Config
 Step 4: Use the Configuration
 
 You can now pass the out_Config object to all other workflows. To access a value, use this syntax:
-
+```
 Assign Activity:
 // Simple Value
 str_SAP_URL = out_Config("AppURLs")("SAP_Login").ToString
@@ -129,7 +129,7 @@ int_MaxRetries = CInt(out_Config("MaxRetries").ToString)
 // Boolean Feature Flag
 bool_SendEmail = CBool(out_Config("FeatureFlags")("SendEmail").ToString)
 As a best practice, you should assign all these values to local variables during the Init phase. This "fails fast" if a key is misspelled and makes your code much more readable.
-
+```
 Step 5: Test the "Live" Update
 
 Run your robot. Note the values it's using in the logs (e.g., SAP_Login URL).
