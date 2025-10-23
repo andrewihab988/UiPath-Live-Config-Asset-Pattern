@@ -63,11 +63,9 @@ Create a text file to define all your settings in JSON format. This structure is
 }
 ```
 
-### Step 2: Configure Your UiPath Project
-Now you can write normal text here and it should not be grey.
+
 
 ### Step 2: Configure Your UiPath Project
-Now you can write normal text here and it should not be grey.
 Step 2: Create the Orchestrator Asset
 
 Log in to UiPath Orchestrator and navigate to the correct folder.
